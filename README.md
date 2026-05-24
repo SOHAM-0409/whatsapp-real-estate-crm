@@ -29,7 +29,7 @@ Required columns: Name · Phone · LastMsg · Interest · Status · Time · Last
 - Data stays in your Google Sheet — you own it
 
 ## 📸 Screenshots
-<img width="1918" height="981" alt="Screenshot 2026-05-23 000158" src="https://github.com/user-attachments/assets/4a24d491-b214-4369-aea2-6392750f7e1d" />
+<img width="1919" height="980" alt="Screenshot 2026-05-24 115355" src="https://github.com/user-attachments/assets/f0da991e-cb9c-4d08-9e81-b387704ddb00" />
 
 
 ## 🤝 Built by
