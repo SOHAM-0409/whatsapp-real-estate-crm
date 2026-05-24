@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Landmark AI WhatsApp Lead Hub</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;overflow:hidden}
+    body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0a0f;color:#e8e8f0}
+    ::-webkit-scrollbar{width:5px}
+    ::-webkit-scrollbar-track{background:#0d0d16}
+    ::-webkit-scrollbar-thumb{background:#2a2a3a;border-radius:3px}
+    input,button,textarea,select{font-family:inherit}
+    button{cursor:pointer}
+
+    /* ── Sheet config modal ── */
+    .modal-bg{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.88);
+      display:flex;align-items:center;justify-content:center;z-index:9999}
+    .modal-box{background:#0b180d;border:1px solid rgba(37,211,102,0.4);border-radius:16px;
+      padding:32px;width:460px;text-align:center;box-shadow:0 0 50px rgba(37,211,102,0.1)}
+    .modal-box h2{font-size:20px;color:#25D366;margin-bottom:8px}
+    .modal-box p{font-size:13px;color:#777;margin-bottom:18px;line-height:1.65}
+    .modal-input{width:100%;padding:11px 14px;background:rgba(255,255,255,0.06);
+      border:1px solid rgba(255,255,255,0.12);border-radius:10px;color:#e8e8f0;
+      font-size:12.5px;outline:none;margin-bottom:10px}
+    .modal-input:focus{border-color:#25D366}
+    .modal-btn{width:100%;padding:12px;background:linear-gradient(135deg,#075E54,#25D366);
+      border:none;border-radius:10px;color:#fff;font-weight:700;font-size:14px}
+    .modal-skip{margin-top:10px;font-size:12px;color:#555;cursor:pointer;
+      text-decoration:underline;display:block}
+    .hint{font-size:11px;color:#3a6a4a;margin-top:8px;line-height:1.5}
+
+    /* ── Lead picker modal (for property → WhatsApp) ── */
+    #lead-picker-overlay{position:fixed;top:0;left:0;right:0;bottom:0;
+      background:rgba(0,0,0,0.75);display:none;align-items:center;
+      justify-content:center;z-index:8000}
+    #lead-picker-overlay.show{display:flex}
+    #lead-picker-box{background:#0d1a10;border:1px solid rgba(37,211,102,0.35);
+      border-radius:14px;padding:24px;width:420px;max-height:80vh;
+      display:flex;flex-direction:column;gap:12px;
+      box-shadow:0 0 40px rgba(0,0,0,0.5)}
+    #lead-picker-box h3{font-size:16px;color:#25D366;margin:0}
+    #lead-picker-sub{font-size:12px;color:#555;margin:0}
+    #lead-picker-list{overflow-y:auto;display:flex;flex-direction:column;gap:7px;max-height:340px}
+    .lead-pick-row{display:flex;align-items:center;gap:10;padding:10px 12px;
+      background:rgba(255,255,255,0.03);border:1px solid rgba(37,211,102,0.1);
+      border-radius:9px;cursor:pointer;transition:background 0.15s}
+    .lead-pick-row:hover{background:rgba(37,211,102,0.09);border-color:rgba(37,211,102,0.3)}
+    #lead-picker-cancel{padding:9px;border-radius:9px;border:1px solid rgba(255,255,255,0.1);
+      background:transparent;color:#666;font-size:13px;cursor:pointer}
+
+    /* ── Toast ── */
+    #toast{position:fixed;bottom:24px;right:24px;
+      background:linear-gradient(135deg,#075E54,#25D366);
+      color:#fff;padding:12px 18px;border-radius:12px;font-size:13px;font-weight:600;
+      z-index:8888;opacity:0;transition:opacity 0.3s;pointer-events:none;
+      max-width:320px;box-shadow:0 4px 20px rgba(0,0,0,0.4)}
+    #toast.show{opacity:1}
+
+    /* ── Write-back status badge ── */
+    #wb-badge{position:fixed;bottom:24px;left:24px;padding:8px 14px;border-radius:10px;
+      font-size:12px;font-weight:600;z-index:8000;opacity:0;transition:opacity 0.3s;
+      pointer-events:none;background:rgba(13,26,16,0.95);
+      border:1px solid rgba(37,211,102,0.3);color:#25D366}
+    #wb-badge.show{opacity:1}
+
+    @keyframes blink{0%,80%,100%{opacity:0}40%{opacity:1}}
+    @keyframes fadein{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    .fadein{animation:fadein 0.25s ease}
+  </style>
+</head>
+<body>
+
+<!-- ── Sheet config modal ─────────────────────────────────────────────────── -->
+<div class="modal-bg" id="modal">
+  <div class="modal-box">
+    <div style="font-size:40px;margin-bottom:12px">📋</div>
+    <h2>Connect Google Sheet</h2>
+    <p>Paste your <strong style="color:#25D366">Google Apps Script Web App URL</strong>.<br/>
+    The same URL handles both reading leads and writing back replies.</p>
+    <input class="modal-input" id="sheetInput" type="text"
+      placeholder="https://script.google.com/macros/s/.../exec" />
+    <p class="hint">Sheet columns: Name · Phone · LastMsg · Interest · Status · Time · LastReply · RepliedAt</p>
+    <button class="modal-btn" id="connectBtn">Connect &amp; Launch →</button>
+    <span class="modal-skip" id="skipBtn">Skip — use demo data</span>
+  </div>
+</div>
+
+<!-- ── Lead picker (property → send to lead) ─────────────────────────────── -->
+<div id="lead-picker-overlay">
+  <div id="lead-picker-box">
+    <h3>📲 Send Property to Lead</h3>
+    <p id="lead-picker-sub">Choose a lead to send this property details via WhatsApp:</p>
+    <div id="lead-picker-list"></div>
+    <button id="lead-picker-cancel" onclick="closePicker()">Cancel</button>
+  </div>
+</div>
+
+<!-- ── Notifications ──────────────────────────────────────────────────────── -->
+<div id="toast"></div>
+<div id="wb-badge">✓ Reply saved to Sheet</div>
+
+<div id="root"></div>
+
+<script>
+  /* ── Global config ────────────────────────────────────────────────────── */
+  var GOOGLE_SHEET_WEB_APP_URL = "YOUR_GOOGLE_APPS_SCRIPT_URL_HERE";
+  var SHEET_URL = GOOGLE_SHEET_WEB_APP_URL;
+
+  /* ── Sheet config modal ───────────────────────────────────────────────── */
+  function dismissModal() { document.getElementById('modal').style.display = 'none'; }
+
+  function connectSheet() {
+    var v = document.getElementById('sheetInput').value.trim();
+    if (v) {
+      SHEET_URL = v;
+      window._sheetUrlReady = v;
+      // Notify React to fetch now that the URL is set
+      window.dispatchEvent(new CustomEvent('sheetUrlSet', { detail: { url: v } }));
+    }
+    dismissModal();
+  }
+
+  document.getElementById('connectBtn').addEventListener('click', connectSheet);
+  document.getElementById('skipBtn').addEventListener('click', function() {
+    window._sheetUrlReady = null;
+    dismissModal();
+  });
+  document.getElementById('sheetInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') connectSheet();
+  });
+
+  /* ── Toast ────────────────────────────────────────────────────────────── */
+  function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 3500);
+  }
+
+  /* ── Write-back badge ─────────────────────────────────────────────────── */
+  function showWbBadge(msg) {
+    var b = document.getElementById('wb-badge');
+    b.textContent = msg || '✓ Reply saved to Sheet';
+    b.classList.add('show');
+    setTimeout(function(){ b.classList.remove('show'); }, 3000);
+  }
+
+  /* ── Phone cleaner ────────────────────────────────────────────────────── */
+  function cleanPhoneGlobal(raw) {
+    var s = String(raw||'').replace(/[\s\-\+\(\)]/g,'').replace(/\D/g,'');
+    if (s.length === 10 && s[0] >= '6') s = '91' + s;
+    return s;
+  }
+
+  /* ── Write reply back to Google Sheet via GET params (most reliable with Apps Script) ── */
+  function writeReplyToSheet(leadPhone, leadName, replyText) {
+    var url = window.SHEET_URL || '';
+    if (!url || url === 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+      showWbBadge('⚠ No Sheet URL — connect in modal');
+      return;
+    }
+    var now = new Date().toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+    // Use GET with query params — bypasses all CORS/preflight issues with Apps Script
+    var params = [
+      'action=updateReply',
+      'phone='     + encodeURIComponent(String(leadPhone || '')),
+      'name='      + encodeURIComponent(String(leadName  || '')),
+      'lastReply=' + encodeURIComponent(String(replyText || '')),
+      'repliedAt=' + encodeURIComponent(now),
+      'status=Contacted',
+    ].join('&');
+    var fullUrl = url + (url.indexOf('?') === -1 ? '?' : '&') + params;
+
+    fetch(fullUrl, { method: 'GET', redirect: 'follow' })
+      .then(function(r) {
+        // Apps Script may redirect — follow it; response could be text or JSON
+        return r.text();
+      })
+      .then(function(raw) {
+        try {
+          var d = JSON.parse(raw);
+          if (d && d.success) {
+            showWbBadge('✓ Reply saved to Sheet');
+          } else if (d && d.error) {
+            showWbBadge('⚠ Sheet: ' + d.error);
+          } else {
+            showWbBadge('✓ Sheet updated');
+          }
+        } catch(e) {
+          // Apps Script sometimes returns HTML on first redirect — treat as success
+          showWbBadge('✓ Sheet updated');
+        }
+      })
+      .catch(function(err) {
+        console.warn('Sheet write-back error:', err);
+        showWbBadge('⚠ Sheet not reachable — check URL');
+      });
+  }
+  window.writeReplyToSheet = writeReplyToSheet;
+
+  /* ── Lead picker for Properties tab ──────────────────────────────────── */
+  var _pickerProperty   = null;
+  var _pickerConversations = [];
+
+  function openPickerForProperty(prop, conversations) {
+    _pickerProperty      = prop;
+    _pickerConversations = conversations;
+    var sub = document.getElementById('lead-picker-sub');
+    sub.textContent = 'Send "' + prop.name + ' (' + prop.price + ')" to:';
+    var list = document.getElementById('lead-picker-list');
+    list.innerHTML = '';
+    conversations.forEach(function(c) {
+      var row = document.createElement('div');
+      row.className = 'lead-pick-row';
+      row.innerHTML =
+        '<div style="width:34px;height:34px;border-radius:50%;background:' + c.color +
+        ';display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;color:#fff;flex-shrink:0">' + c.avatar + '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:13px;font-weight:600;color:#dde">' + c.user + '</div>' +
+          '<div style="font-size:11px;color:#555;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + (c.interest||c.lastMsg||'') + '</div>' +
+        '</div>' +
+        '<div style="font-size:11px;color:#25D366;font-weight:600;flex-shrink:0">📲 Send</div>';
+      row.addEventListener('click', function() {
+        closePicker();
+        var msg = 'Hi ' + c.user.split(' ')[0] + '! I wanted to share details about a great property that matches your interest:\n\n' +
+          prop.img + ' *' + prop.name + '*\n' +
+          '📍 ' + prop.location + '\n' +
+          '💰 ' + prop.price + ' | ' + prop.area + '\n' +
+          '✨ ' + prop.features.join(', ') + '\n' +
+          '🟢 Status: ' + prop.status + '\n\n' +
+          'EMI options available. Would you like to schedule a site visit? 😊';
+        var phone   = cleanPhoneGlobal(c.phone || '');
+        var encoded = encodeURIComponent(msg);
+        window.open('https://wa.me/' + phone + '?text=' + encoded, '_blank', 'noopener,noreferrer');
+        showToast('📲 Sending ' + prop.name + ' to ' + c.user);
+        writeReplyToSheet(c.phone, c.user, '[Property shared: ' + prop.name + ']');
+      });
+      list.appendChild(row);
+    });
+    document.getElementById('lead-picker-overlay').classList.add('show');
+  }
+  function closePicker() {
+    document.getElementById('lead-picker-overlay').classList.remove('show');
+  }
+  window.openPickerForProperty = openPickerForProperty;
+  window.closePicker           = closePicker;
+</script>
+
+<script type="text/babel" data-presets="react">
+var useState  = React.useState;
+var useEffect = React.useEffect;
+var useRef    = React.useRef;
+
+/* ── Theme ────────────────────────────────────────────────────────────────── */
+var WA = {
+  green:'#25D366', mid:'#128C7E', deep:'#075E54', teal:'#34B7F1',
+  bg:'#0a0a0f', surface:'#0d0d16',
+  card:'rgba(255,255,255,0.03)', border:'rgba(255,255,255,0.07)',
+  gborder:'rgba(37,211,102,0.15)',
+};
+
+/* ── Property data ────────────────────────────────────────────────────────── */
+var PROPERTIES = [
+  {id:1,name:'Sunrise Heights – 3BHK',location:'Salt Lake, Kolkata',price:'Rs 85 Lakh',
+   type:'Apartment',area:'1,450 sq ft',status:'Available',img:'🏢',
+   features:['Modular Kitchen','2 Covered Parking','24/7 Security','Gym']},
+  {id:2,name:'Green Villas – 4BHK',location:'Rajarhat New Town, Kolkata',price:'Rs 1.4 Cr',
+   type:'Villa',area:'2,800 sq ft',status:'Available',img:'🏡',
+   features:['Private Garden','Swimming Pool','Smart Home','3 Parking']},
+  {id:3,name:'Metro Residency – 2BHK',location:'Behala, Kolkata',price:'Rs 42 Lakh',
+   type:'Apartment',area:'880 sq ft',status:'Limited',img:'🏠',
+   features:['Metro Connectivity','Rooftop Garden','Power Backup']},
+  {id:4,name:'Elysium Towers – Penthouse',location:'EM Bypass, Kolkata',price:'Rs 3.2 Cr',
+   type:'Penthouse',area:'5,100 sq ft',status:'Available',img:'🏙️',
+   features:['360 Degree City View','Private Terrace','Butler Service','Jacuzzi']},
+];
+
+/* ── Demo data ────────────────────────────────────────────────────────────── */
+var SAMPLE_MSGS = [
+  "Hi, what's the price of the 3BHK in Salt Lake?",
+  "Is the Rajarhat villa still available?",
+  "Do you have anything under 50 lakhs?",
+  "Kitna price hai Behala wala flat?",
+  "Looking for property near metro station",
+  "Share details about the penthouse",
+  "What is the EMI for 85 lakh apartment?",
+  "4BHK options with parking?",
+];
+
+var DEMO_CONVS = [
+  {id:1,user:'Priya Sharma',phone:'9831012345',avatar:'P',color:'#25D366',
+   interest:'4BHK Villa',status:'Hot',unread:1,time:'2m ago',
+   lastMsg:'Is the Rajarhat villa available?',
+   messages:[{from:'lead',text:'Hi! Is the Rajarhat villa still available?',time:'10:32 AM'}]},
+  {id:2,user:'Rohit Malhotra',phone:'9804567890',avatar:'R',color:'#128C7E',
+   interest:'2BHK Apartment',status:'Warm',unread:0,time:'15m ago',
+   lastMsg:'Price for 2BHK near metro?',
+   messages:[
+     {from:'lead',text:'What is the price for 2BHK near metro?',time:'10:15 AM'},
+     {from:'agent',text:'Metro Residency 2BHK in Behala is Rs 42 Lakh. 5 mins from metro, rooftop garden included. Want a site visit this weekend?',time:'10:15 AM'},
+   ]},
+  {id:3,user:'Neha Agarwal',phone:'9007123456',avatar:'N',color:'#075E54',
+   interest:'Penthouse',status:'Warm',unread:0,time:'1h ago',
+   lastMsg:'Do you have penthouse options?',
+   messages:[
+     {from:'lead',text:'Do you have penthouse options with a view?',time:'09:30 AM'},
+     {from:'agent',text:'Yes! Elysium Towers Penthouse on EM Bypass — 5100 sq ft, 360 degree views, jacuzzi and butler service at Rs 3.2 Cr. Shall I arrange a viewing?',time:'09:30 AM'},
+   ]},
+  {id:4,user:'Amit Bose',phone:'8013456789',avatar:'A',color:'#34B7F1',
+   interest:'2-3 BHK',status:'New',unread:2,time:'3h ago',
+   lastMsg:'Budget around 50 lakhs',
+   messages:[{from:'lead',text:'Hi, my budget is around 50 lakhs. What options do you have?',time:'08:15 AM'}]},
+];
+
+var DEMO_LOGS = [
+  {time:'10:32 AM',event:'New lead from Priya Sharma (+91 98310 12345)',type:'incoming'},
+  {time:'10:15 AM',event:'Agent replied + Sheet updated: Rohit Malhotra',type:'whatsapp'},
+  {time:'09:30 AM',event:'Agent replied + Sheet updated: Neha Agarwal',type:'whatsapp'},
+  {time:'09:10 AM',event:'Lead flagged: Amit Bose — Budget Rs 50L',type:'lead'},
+];
+
+var MOCK_POOL = [
+  'Sunrise Heights 3BHK in Salt Lake is Rs 85 Lakh. EMI from around Rs 57K per month. Site visit this weekend?',
+  'Green Villas 4BHK in Rajarhat is Rs 1.4 Cr — pool, garden, smart home. Shall I book a viewing?',
+  'Metro Residency 2BHK in Behala is Rs 42 Lakh. Metro connectivity and rooftop garden. EMI around Rs 28K per month.',
+  'For under Rs 50L, Metro Residency 2BHK in Behala is the best option at Rs 42L. Want a site visit?',
+  'We have properties from Rs 42 Lakh to Rs 3.2 Cr. What is your preferred location and budget?',
+  'Elysium Penthouse on EM Bypass — 5100 sq ft, jacuzzi, 360 degree views at Rs 3.2 Cr. Worth every rupee!',
+];
+var mockIdx = 0;
+
+/* ── Quick rule-based replies ─────────────────────────────────────────────── */
+// smartReply: takes the lead message AND the lead's interest/context for accurate replies
+function smartReply(text, interest) {
+  var t = (text || '').toLowerCase();
+  var ctx = ((interest || '') + ' ' + t).toLowerCase();
+  var has = function(w){ return ctx.indexOf(w) !== -1; };
+  var hasT = function(w){ return t.indexOf(w) !== -1; };
+
+  // ── Detect which property the lead is talking about ──────────────────────
+  var prop = null;
+  if (has('3bhk') || has('salt lake') || has('sunrise') || has('85'))
+    prop = { name:'Sunrise Heights 3BHK', loc:'Salt Lake', price:'Rs 85 Lakh', emi:'Rs 57K', area:'1450 sq ft', features:'modular kitchen, 2 covered parking, 24/7 security and gym' };
+  else if (has('4bhk') || has('rajarhat') || has('villa') || has('green') || has('1.4') || has('1.5 cr') || has('joint family') || has('garden'))
+    prop = { name:'Green Villas 4BHK', loc:'Rajarhat New Town', price:'Rs 1.4 Cr', emi:'Rs 95K', area:'2800 sq ft', features:'private garden, swimming pool, smart home and 3 parking' };
+  else if (has('2bhk') || has('behala') || has('metro') || has('42') || has('50 lakh') || has('under 50') || has('connectivity'))
+    prop = { name:'Metro Residency 2BHK', loc:'Behala', price:'Rs 42 Lakh', emi:'Rs 28K', area:'880 sq ft', features:'metro connectivity, rooftop garden and power backup' };
+  else if (has('penthouse') || has('5bhk') || has('elysium') || has('em bypass') || has('3.2') || has('luxury') || has('jacuzzi'))
+    prop = { name:'Elysium Towers Penthouse', loc:'EM Bypass', price:'Rs 3.2 Cr', emi:'Rs 2.1L', area:'5100 sq ft', features:'360 degree city view, private terrace, butler service and jacuzzi' };
+
+  // ── EMI / loan questions ──────────────────────────────────────────────────
+  if (hasT('emi') || hasT('loan') || hasT('finance') || hasT('installment') || hasT('monthly') || hasT('per month')) {
+    if (prop)
+      return 'For ' + prop.name + ' (' + prop.price + '), EMI starts from approx ' + prop.emi + ' per month (20yr loan at 8.5%). Our finance team can get you the best bank rates. Shall I connect you?';
+    return 'EMI details: 2BHK Rs 42L = ~Rs 28K/month, 3BHK Rs 85L = ~Rs 57K/month, 4BHK Rs 1.4Cr = ~Rs 95K/month. Which property interests you most?';
+  }
+
+  // ── Price questions ───────────────────────────────────────────────────────
+  if (hasT('price') || hasT('kitna') || hasT('cost') || hasT('how much') || hasT('rate') || hasT('budget')) {
+    if (prop)
+      return prop.name + ' in ' + prop.loc + ' is priced at ' + prop.price + ' (' + prop.area + '). EMI from ' + prop.emi + '/month. Shall I arrange a site visit?';
+    return 'Our properties start from Rs 42 Lakh (2BHK Behala) up to Rs 3.2 Cr (Penthouse EM Bypass). What is your preferred location and budget range?';
+  }
+
+  // ── Features / amenities questions ───────────────────────────────────────
+  if (hasT('feature') || hasT('facilit') || hasT('amenity') || hasT('amenities') || hasT('parking') || hasT('pool') || hasT('gym') || hasT('garden') || hasT('floor plan') || hasT('detail')) {
+    if (prop)
+      return prop.name + ' offers ' + prop.features + '. Total area ' + prop.area + ' priced at ' + prop.price + '. Would you like to schedule a site visit to see it in person?';
+    return 'All our properties come with premium amenities. Which property are you interested in — 2BHK, 3BHK, 4BHK Villa or Penthouse? I will share full details!';
+  }
+
+  // ── Location questions ────────────────────────────────────────────────────
+  if (hasT('location') || hasT('where') || hasT('kahan') || hasT('near') || hasT('distance') || hasT('connectivity')) {
+    if (prop)
+      return prop.name + ' is located in ' + prop.loc + ', Kolkata — excellent connectivity with nearby schools, hospitals and transport. Want me to share the exact location on Google Maps?';
+    return 'We have properties in Salt Lake, Rajarhat New Town, Behala and EM Bypass — all prime Kolkata locations with great connectivity. Which area works best for you?';
+  }
+
+  // ── Availability questions ────────────────────────────────────────────────
+  if (hasT('avail') || hasT('vacant') || hasT('ready') || hasT('booking') || hasT('book')) {
+    if (prop)
+      return prop.name + ' is currently available for booking! Price Rs ' + prop.price.replace('Rs ','') + '. We have limited units remaining. Shall I block one for you?';
+    return 'Yes, all 4 properties are currently available — Sunrise Heights (Salt Lake), Green Villas (Rajarhat), Metro Residency (Behala, limited), Elysium Penthouse (EM Bypass). Which one?';
+  }
+
+  // ── Site visit ────────────────────────────────────────────────────────────
+  if (hasT('visit') || hasT('site') || hasT('tour') || hasT('see') || hasT('show') || hasT('appointment') || hasT('call')) {
+    if (prop)
+      return 'Would love to show you ' + prop.name + '! Site visits available Mon–Sun, 10 AM to 6 PM. Please share a convenient time and I will confirm your slot right away.';
+    return 'Site visits available Monday to Sunday, 10 AM to 6 PM. Which property would you like to visit? Share your preferred date and I will book it instantly!';
+  }
+
+  // ── General interest / first contact ─────────────────────────────────────
+  if (prop)
+    return 'Thank you for your interest in ' + prop.name + ', ' + prop.loc + '! It is priced at ' + prop.price + ' with ' + prop.features + '. Shall I send the full brochure or arrange a site visit?';
+
+  return 'Thank you for reaching out to Landmark Properties! We have 2BHK (Rs 42L), 3BHK (Rs 85L), 4BHK Villa (Rs 1.4Cr) and Penthouse (Rs 3.2Cr) available in Kolkata. What are you looking for?';
+}
+
+// Keep quickReply as alias for backward compatibility with simulate triggers
+function quickReply(text) {
+  return smartReply(text, '');
+}
+
+/* ── Utility ──────────────────────────────────────────────────────────────── */
+function timeNow() {
+  return new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+}
+function initials(n){ return String(n||'?')[0].toUpperCase(); }
+var COLORS=['#25D366','#128C7E','#075E54','#34B7F1','#00BFA5','#1DA462'];
+function colorFor(i){ return COLORS[i%COLORS.length]; }
+
+/* ── Style factories ──────────────────────────────────────────────────────── */
+function pill(active) {
+  return {padding:'4px 12px',borderRadius:20,fontSize:12,fontWeight:600,cursor:'pointer',
+    display:'inline-block',
+    background:active?'rgba(37,211,102,0.15)':'rgba(255,255,255,0.06)',
+    color:active?WA.green:'#777',
+    border:'1px solid '+(active?'rgba(37,211,102,0.35)':'rgba(255,255,255,0.1)')};
+}
+function tog(on){
+  return {width:42,height:24,borderRadius:12,position:'relative',cursor:'pointer',
+    flexShrink:0,transition:'background 0.3s',
+    background:on?'linear-gradient(90deg,'+WA.mid+','+WA.green+')':'#2a2a3a'};
+}
+function togDot(on){
+  return {position:'absolute',top:3,left:on?20:3,width:18,height:18,
+    borderRadius:'50%',background:'#fff',transition:'left 0.3s'};
+}
+function bub(from){
+  var ag = from==='agent';
+  return {maxWidth:'73%',alignSelf:ag?'flex-end':'flex-start',
+    padding:'10px 14px',
+    borderRadius:ag?'16px 4px 16px 16px':'4px 16px 16px 16px',
+    background:ag?'linear-gradient(135deg,rgba(37,211,102,0.15),rgba(7,94,84,0.2))':'#13132a',
+    border:'1px solid '+(ag?'rgba(37,211,102,0.25)':'rgba(255,255,255,0.07)'),
+    fontSize:13.5,lineHeight:1.55,color:'#dde'};
+}
+function statBadge(s){
+  var bg={Hot:'rgba(239,68,68,0.18)',Warm:'rgba(245,158,11,0.18)',
+          New:'rgba(37,211,102,0.14)',Contacted:'rgba(52,183,241,0.18)'};
+  var cl={Hot:'#ef4444',Warm:'#f59e0b',New:WA.green,Contacted:WA.teal};
+  return {display:'inline-block',padding:'2px 8px',borderRadius:6,fontSize:10,fontWeight:700,
+    background:bg[s]||'rgba(255,255,255,0.07)',color:cl[s]||'#aaa'};
+}
+function ldot(t){
+  var c={incoming:WA.teal,whatsapp:WA.green,lead:'#f59e0b',ai:'#a855f7',sheet:'#34B7F1'};
+  return {width:8,height:8,borderRadius:'50%',flexShrink:0,marginTop:5,background:c[t]||'#555'};
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   COMPONENTS
+══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+function Header(props) {
+  var sm={idle:'Demo Data',loading:'Syncing…',ok:'Sheet Connected',error:'Demo Mode'};
+  var sc={idle:'#444',loading:'#f59e0b',ok:WA.green,error:'#ef4444'};
+  var ss=props.sheetStatus;
+  return (
+    <div style={{background:'linear-gradient(135deg,#071a0e,#0a1f14)',
+      borderBottom:'1px solid rgba(37,211,102,0.18)',padding:'13px 22px',
+      display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
+      <div style={{display:'flex',alignItems:'center',gap:10}}>
+        <div style={{width:36,height:36,borderRadius:10,
+          background:'linear-gradient(135deg,'+WA.deep+','+WA.green+')',
+          display:'flex',alignItems:'center',justifyContent:'center',fontSize:20}}>💬</div>
+        <div>
+          <div style={{fontSize:16,fontWeight:700,
+            background:'linear-gradient(90deg,'+WA.green+','+WA.teal+')',
+            WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>
+            Landmark AI WhatsApp Lead Hub
+          </div>
+          <div style={{fontSize:11,color:'#3a6a4a',marginTop:1}}>
+            WhatsApp CRM Automation · Real Estate
+          </div>
+        </div>
+      </div>
+      <div style={{display:'flex',gap:8,alignItems:'center'}}>
+        <span style={{...pill(true),color:sc[ss]||'#444'}}>● {sm[ss]||'Demo Data'}</span>
+        <span style={pill(false)}>WhatsApp CRM</span>
+        <div style={tog(props.autoMode)} onClick={props.onToggleAuto}>
+          <div style={togDot(props.autoMode)}/>
+        </div>
+        <span style={{fontSize:12,color:props.autoMode?WA.green:'#555',fontWeight:600}}>
+          Auto-Draft {props.autoMode?'ON':'OFF'}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+function Sidebar(props) {
+  return (
+    <div style={{width:285,borderRight:'1px solid '+WA.border,display:'flex',
+      flexDirection:'column',background:WA.surface,overflowY:'auto',flexShrink:0}}>
+      <div style={{padding:'13px 14px',borderBottom:'1px solid rgba(255,255,255,0.05)',
+        fontSize:11,color:'#444',fontWeight:700,letterSpacing:1,textTransform:'uppercase',
+        display:'flex',justifyContent:'space-between'}}>
+        <span>Leads ({props.conversations.length})</span>
+        <span style={{color:WA.green}}>● Live</span>
+      </div>
+
+      {props.conversations.map(function(c){
+        var act = props.activeId===c.id;
+        return (
+          <div key={c.id} onClick={function(){props.onSelect(c);}}
+            style={{padding:'11px 13px',cursor:'pointer',display:'flex',gap:10,
+              alignItems:'center',
+              background:act?'rgba(37,211,102,0.07)':'transparent',
+              borderLeft:'3px solid '+(act?WA.green:'transparent'),
+              transition:'background 0.15s'}}>
+            <div style={{position:'relative',flexShrink:0}}>
+              <div style={{width:40,height:40,borderRadius:'50%',background:c.color,
+                display:'flex',alignItems:'center',justifyContent:'center',
+                fontWeight:700,fontSize:15,color:'#fff'}}>{c.avatar}</div>
+              {c.unread>0 && <div style={{position:'absolute',top:-3,right:-3,
+                background:'#ef4444',borderRadius:'50%',width:17,height:17,
+                display:'flex',alignItems:'center',justifyContent:'center',
+                fontSize:9,fontWeight:700,color:'#fff'}}>{c.unread}</div>}
+            </div>
+            <div style={{minWidth:0,flex:1}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <div style={{fontSize:13,fontWeight:600,color:'#dde',overflow:'hidden',
+                  textOverflow:'ellipsis',whiteSpace:'nowrap',maxWidth:130}}>{c.user}</div>
+                <div style={{fontSize:10,color:'#444',flexShrink:0}}>{c.time}</div>
+              </div>
+              <div style={{fontSize:11,color:'#555',overflow:'hidden',
+                textOverflow:'ellipsis',whiteSpace:'nowrap',marginTop:1}}>{c.lastMsg}</div>
+              {c.interest&&<div style={{fontSize:10,color:'#3a6a4a',marginTop:2}}>🏠 {c.interest}</div>}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Demo triggers */}
+      <div style={{padding:'12px 13px',borderTop:'1px solid rgba(255,255,255,0.04)',marginTop:'auto'}}>
+        <div style={{fontSize:10,color:'#333',fontWeight:700,marginBottom:7,
+          letterSpacing:1,textTransform:'uppercase'}}>Simulate Incoming Lead</div>
+        {SAMPLE_MSGS.slice(0,4).map(function(dm,i){
+          return (
+            <div key={i} onClick={function(){props.onSimulate(dm);}}
+              style={{padding:'6px 9px',marginBottom:5,
+                background:'rgba(37,211,102,0.05)',
+                border:'1px solid rgba(37,211,102,0.1)',
+                borderRadius:7,fontSize:11,color:'#5a8a6a',
+                cursor:'pointer',lineHeight:1.4}}>{dm}</div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ── ChatWindow ──────────────────────────────────────────────────────────── */
+function ChatWindow(props) {
+  var endRef = useRef(null);
+  useEffect(function(){
+    if(endRef.current) endRef.current.scrollIntoView({behavior:'smooth'});
+  },[props.messages, props.isTyping]);
+
+  if(!props.conv){
+    return (
+      <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',
+        flexDirection:'column',gap:12,color:'#333'}}>
+        <div style={{fontSize:44}}>💬</div>
+        <div style={{fontSize:13}}>Select a lead to start</div>
+      </div>
+    );
+  }
+
+  var c = props.conv;
+  var dp = c.phone ? '+'+cleanPhoneGlobal(c.phone) : '';
+
+  return (
+    <div style={{flex:1,display:'flex',flexDirection:'column',
+      background:'#0a0a12',overflow:'hidden'}}>
+
+      {/* Header bar */}
+      <div style={{padding:'11px 18px',borderBottom:'1px solid '+WA.border,
+        display:'flex',alignItems:'center',justifyContent:'space-between',
+        background:'#0c0c18',flexShrink:0}}>
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <div style={{width:40,height:40,borderRadius:'50%',background:c.color,
+            display:'flex',alignItems:'center',justifyContent:'center',
+            fontWeight:700,fontSize:15,color:'#fff'}}>{c.avatar}</div>
+          <div>
+            <div style={{fontWeight:700,fontSize:14}}>{c.user}</div>
+            <div style={{fontSize:11,color:'#3a6a4a'}}>
+              {dp}{c.interest?' · '+c.interest:''}
+            </div>
+          </div>
+        </div>
+        <div style={{display:'flex',gap:8,alignItems:'center'}}>
+          <span style={statBadge(c.status||'New')}>{c.status||'New'}</span>
+          <button
+            onClick={function(){
+              window.open('https://wa.me/'+cleanPhoneGlobal(c.phone||''),'_blank');
+            }}
+            style={{padding:'6px 13px',borderRadius:9,
+              border:'1px solid '+WA.green,
+              background:'rgba(37,211,102,0.1)',
+              color:WA.green,fontWeight:700,fontSize:12}}>
+            📲 Open WhatsApp
+          </button>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div style={{flex:1,overflowY:'auto',padding:'18px 20px',
+        display:'flex',flexDirection:'column',gap:11,background:'#0a0a12'}}>
+        <div style={{textAlign:'center',color:'#1a1a2e',fontSize:11,marginBottom:4}}>
+          🔒 WhatsApp Deep Link Mode — replies open in WhatsApp and are saved to Sheet
+        </div>
+        {(props.messages||[]).map(function(m,i){
+          var ag = m.from==='agent';
+          return (
+            <div key={i} className="fadein"
+              style={{display:'flex',flexDirection:'column',
+                alignItems:ag?'flex-end':'flex-start'}}>
+              <div style={{fontSize:10,
+                color:ag?WA.mid:'#444',
+                fontWeight:600,marginBottom:3}}>
+                {ag ? '👤 AGENT' : c.user}
+              </div>
+              <div style={bub(m.from)}>{m.text}</div>
+              <div style={{fontSize:10,color:'#2a2a3a',marginTop:3}}>
+                {m.time}
+                {ag&&<span style={{color:'#3a6a4a'}}> · sent via WhatsApp ✓✓ · saved to Sheet ✓</span>}
+              </div>
+            </div>
+          );
+        })}
+        {props.isTyping && (
+          <div style={{display:'flex',flexDirection:'column',alignItems:'flex-start'}}>
+            <div style={{fontSize:10,color:'#444',marginBottom:3}}>AI drafting reply…</div>
+            <div style={{...bub('lead'),padding:'12px 16px',color:'#444'}}>
+              <span style={{display:'inline-flex',gap:5}}>
+                <span style={{animation:'blink 1.2s infinite 0s'}}>●</span>
+                <span style={{animation:'blink 1.2s infinite 0.4s'}}>●</span>
+                <span style={{animation:'blink 1.2s infinite 0.8s'}}>●</span>
+              </span>
+            </div>
+          </div>
+        )}
+        <div ref={endRef}/>
+      </div>
+
+      {/* Input */}
+      <div style={{padding:'13px 18px',borderTop:'1px solid '+WA.border,
+        display:'flex',flexDirection:'column',gap:8,background:'#0c0c18',flexShrink:0}}>
+        <div style={{display:'flex',gap:8,alignItems:'center'}}>
+          <button onClick={props.onDraftAI}
+            style={{padding:'7px 14px',borderRadius:9,
+              border:'1px solid rgba(168,85,247,0.4)',
+              background:'rgba(168,85,247,0.1)',
+              color:'#a855f7',fontWeight:700,fontSize:12,whiteSpace:'nowrap'}}>
+            🤖 AI Draft Reply
+          </button>
+          <span style={{fontSize:11,color:'#444'}}>
+            {props.isTyping ? 'AI is thinking…' : 'Auto-generate reply from lead message'}
+          </span>
+        </div>
+        <div style={{display:'flex',gap:8,alignItems:'center'}}>
+          <input
+            style={{flex:1,background:'rgba(255,255,255,0.05)',
+              border:'1px solid rgba(37,211,102,0.18)',borderRadius:11,
+              padding:'11px 14px',color:'#e8e8f0',fontSize:13.5,outline:'none'}}
+            placeholder="Type or AI-draft a reply… Enter to send via WhatsApp"
+            value={props.inputMsg}
+            onChange={function(e){props.onInputChange(e.target.value);}}
+            onKeyDown={function(e){if(e.key==='Enter')props.onSend();}}
+          />
+          <button onClick={props.onSend}
+            style={{padding:'11px 18px',borderRadius:11,border:'none',
+              background:'linear-gradient(135deg,'+WA.deep+','+WA.green+')',
+              color:'#fff',fontWeight:700,fontSize:13,whiteSpace:'nowrap'}}>
+            📲 Send &amp; Save
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── StatsPanel ──────────────────────────────────────────────────────────── */
+function StatsPanel(props) {
+  var _s = useState({flagLeads:true,autoTag:true,sheetSync:true});
+  var settings=_s[0]; var setSettings=_s[1];
+  return (
+    <div style={{width:260,borderLeft:'1px solid '+WA.border,
+      display:'flex',flexDirection:'column',background:WA.surface,
+      overflowY:'auto',padding:15,gap:14,flexShrink:0}}>
+
+      <div style={{fontSize:11,fontWeight:700,color:'#444',letterSpacing:1,
+        textTransform:'uppercase'}}>Stats</div>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:9}}>
+        {[{l:'Sent',v:props.stats.replied,i:'✅'},
+          {l:'Pending',v:props.stats.pending,i:'⏳'},
+          {l:'Leads',v:props.stats.leads,i:'🎯'},
+          {l:'Avg',v:props.stats.avgTime,i:'⚡'}].map(function(s){
+          return (
+            <div key={s.l} style={{background:'rgba(37,211,102,0.07)',
+              border:'1px solid rgba(37,211,102,0.15)',borderRadius:11,
+              padding:'11px 8px',textAlign:'center'}}>
+              <div style={{fontSize:17}}>{s.i}</div>
+              <div style={{fontSize:20,fontWeight:800,color:WA.green}}>{s.v}</div>
+              <div style={{fontSize:10,color:'#555'}}>{s.l}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Sheet write-back status */}
+      <div style={{background:'rgba(37,211,102,0.04)',
+        border:'1px solid rgba(37,211,102,0.12)',borderRadius:13,padding:13}}>
+        <div style={{fontSize:11,fontWeight:700,color:WA.mid,marginBottom:9}}>
+          📊 SHEET SYNC
+        </div>
+        <div style={{fontSize:11,color:'#5a8a6a',lineHeight:1.6}}>
+          Every agent reply is written back to the Google Sheet automatically.<br/>
+          Columns updated: <span style={{color:WA.green}}>LastReply · RepliedAt · Status</span>
+        </div>
+        <div style={{marginTop:10,padding:'7px 10px',borderRadius:8,
+          background:'rgba(255,255,255,0.03)',border:'1px solid rgba(255,255,255,0.06)',
+          fontSize:11,color:'#555'}}>
+          {props.sheetStatus==='ok'
+            ? <span style={{color:WA.green}}>✅ Sheet connected — replies sync live</span>
+            : <span>⚠ Sheet not connected — connect URL in modal to enable sync</span>}
+        </div>
+      </div>
+
+      {/* Settings */}
+      <div style={{background:WA.card,border:'1px solid '+WA.border,borderRadius:13,padding:13}}>
+        <div style={{fontSize:11,fontWeight:700,color:'#444',marginBottom:11}}>CRM SETTINGS</div>
+        {[
+          {label:'Auto-draft replies',   on:props.autoMode,      fn:props.onToggleAuto},
+          {label:'Flag hot leads',        on:settings.flagLeads,  fn:function(){setSettings(function(p){return Object.assign({},p,{flagLeads:!p.flagLeads});})}},
+          {label:'Auto-tag by interest', on:settings.autoTag,    fn:function(){setSettings(function(p){return Object.assign({},p,{autoTag:!p.autoTag});})}},
+          {label:'Sheet write-back',     on:settings.sheetSync,  fn:function(){setSettings(function(p){return Object.assign({},p,{sheetSync:!p.sheetSync});})}},
+        ].map(function(item,i){
+          return (
+            <div key={i} style={{display:'flex',justifyContent:'space-between',
+              alignItems:'center',marginBottom:10}}>
+              <span style={{fontSize:12,color:'#888'}}>{item.label}</span>
+              <div style={tog(item.on)} onClick={item.fn}><div style={togDot(item.on)}/></div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* How it works */}
+      <div style={{background:'rgba(37,211,102,0.04)',
+        border:'1px solid rgba(37,211,102,0.12)',borderRadius:13,padding:13}}>
+        <div style={{fontSize:11,fontWeight:700,color:WA.mid,marginBottom:9}}>📲 HOW IT WORKS</div>
+        {['Type reply in the chat box',
+          'Click "Send & Save"',
+          'WhatsApp opens pre-filled for the lead',
+          'Reply is written back to Sheet automatically',
+          'Lead status updates to "Contacted"'].map(function(step,i){
+          return (
+            <div key={i} style={{display:'flex',gap:8,marginBottom:7,alignItems:'flex-start'}}>
+              <div style={{width:17,height:17,borderRadius:'50%',background:WA.deep,
+                display:'flex',alignItems:'center',justifyContent:'center',
+                fontSize:9,fontWeight:700,color:'#fff',flexShrink:0,marginTop:1}}>{i+1}</div>
+              <span style={{fontSize:11,color:'#5a7a5a',lineHeight:1.4}}>{step}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* More triggers */}
+      <div style={{background:WA.card,border:'1px solid '+WA.border,borderRadius:13,padding:13}}>
+        <div style={{fontSize:11,fontWeight:700,color:'#444',marginBottom:9}}>MORE TRIGGERS</div>
+        {SAMPLE_MSGS.slice(4).map(function(dm,i){
+          return (
+            <div key={i} onClick={function(){props.onSimulate(dm);}}
+              style={{padding:'6px 9px',marginBottom:5,
+                background:'rgba(37,211,102,0.04)',
+                border:'1px solid rgba(37,211,102,0.09)',
+                borderRadius:7,fontSize:11,color:'#5a8a6a',
+                cursor:'pointer',lineHeight:1.4}}>{dm}</div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ── Properties Dashboard ────────────────────────────────────────────────── */
+function PropertiesDashboard(props) {
+  return (
+    <div style={{flex:1,overflowY:'auto',padding:22,
+      display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))',
+      gap:15,alignContent:'start'}}>
+      {PROPERTIES.map(function(p){
+        var ltd = p.status==='Limited';
+        return (
+          <div key={p.id} style={{background:WA.card,
+            border:'1px solid '+(ltd?'rgba(245,158,11,0.2)':WA.gborder),
+            borderRadius:15,padding:17,display:'flex',flexDirection:'column',gap:0}}>
+            <div style={{fontSize:34,marginBottom:8}}>{p.img}</div>
+            <div style={{fontWeight:700,fontSize:14,marginBottom:3}}>{p.name}</div>
+            <div style={{fontSize:12,color:'#555',marginBottom:7}}>📍 {p.location}</div>
+            <div style={{fontSize:20,fontWeight:800,color:WA.green,marginBottom:7}}>{p.price}</div>
+            <div style={{marginBottom:9,display:'flex',alignItems:'center',gap:7}}>
+              <span style={{display:'inline-block',padding:'2px 8px',borderRadius:6,
+                fontSize:11,fontWeight:600,
+                background:ltd?'rgba(245,158,11,0.15)':'rgba(37,211,102,0.15)',
+                color:ltd?'#f59e0b':WA.green}}>{p.status}</span>
+              <span style={{fontSize:11,color:'#444'}}>{p.area}</span>
+            </div>
+            <div style={{marginBottom:12}}>
+              {p.features.map(function(f,i){
+                return (
+                  <span key={i} style={{display:'inline-block',
+                    background:'rgba(37,211,102,0.05)',
+                    border:'1px solid rgba(37,211,102,0.1)',
+                    borderRadius:5,padding:'2px 6px',
+                    marginRight:3,marginBottom:3,
+                    fontSize:10,color:'#5a8a6a'}}>{f}</span>
+                );
+              })}
+            </div>
+            {/* ── FIXED: sends from AGENT to a LEAD, not buyer to buyer ── */}
+            <button
+              onClick={function(){
+                /* Open lead picker — agent chooses which lead to send this to */
+                window.openPickerForProperty(p, props.conversations);
+              }}
+              style={{width:'100%',padding:'9px',borderRadius:9,
+                border:'1px solid '+WA.mid,
+                background:'rgba(37,211,102,0.1)',
+                color:WA.green,fontSize:12,fontWeight:700,marginTop:'auto'}}>
+              📤 Send to a Lead via WhatsApp
+            </button>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/* ── Activity Log ────────────────────────────────────────────────────────── */
+function ActivityLog(props) {
+  var tl={incoming:'Lead In',whatsapp:'WA Sent',lead:'Flagged',ai:'System',sheet:'Sheet'};
+  var tc={incoming:WA.teal,whatsapp:WA.green,lead:'#f59e0b',ai:'#a855f7',sheet:WA.teal};
+  return (
+    <div style={{flex:1,overflowY:'auto',padding:22}}>
+      <div style={{maxWidth:640}}>
+        <div style={{fontWeight:700,marginBottom:15,fontSize:15,
+          display:'flex',alignItems:'center',gap:8}}>
+          Activity Log
+          <span style={{fontSize:12,color:WA.mid,
+            background:'rgba(37,211,102,0.09)',
+            padding:'2px 8px',borderRadius:6}}>{props.logs.length} events</span>
+        </div>
+        {props.logs.length===0&&<div style={{color:'#333',fontSize:13}}>No activity yet.</div>}
+        {props.logs.map(function(l,i){
+          return (
+            <div key={i} className="fadein"
+              style={{display:'flex',gap:11,padding:'11px 15px',
+                background:'rgba(255,255,255,0.025)',
+                border:'1px solid rgba(255,255,255,0.05)',
+                borderRadius:9,marginBottom:7,alignItems:'flex-start'}}>
+              <div style={ldot(l.type)}/>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,color:'#ccc'}}>{l.event}</div>
+                <div style={{fontSize:10,color:'#333',marginTop:3,display:'flex',gap:8}}>
+                  <span>{l.time}</span>
+                  <span style={{color:tc[l.type]||'#666',fontWeight:600}}>
+                    {tl[l.type]||l.type}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   APP ROOT
+══════════════════════════════════════════════════════════════════════════ */
+function App() {
+  var _tab   = useState('inbox');      var activeTab=_tab[0];    var setTab=_tab[1];
+  var _auto  = useState(true);         var autoMode=_auto[0];    var setAuto=_auto[1];
+  var _convs = useState(DEMO_CONVS);   var convs=_convs[0];      var setConvs=_convs[1];
+  var _act   = useState(DEMO_CONVS[0]);var activeConv=_act[0];   var setActive=_act[1];
+  var _type  = useState(false);        var isTyping=_type[0];    var setTyping=_type[1];
+  var _inp   = useState('');           var inputMsg=_inp[0];     var setInput=_inp[1];
+  var _stats = useState({replied:47,pending:3,leads:4,avgTime:'8s'});
+  var stats=_stats[0]; var setStats=_stats[1];
+  var _logs  = useState(DEMO_LOGS);    var logs=_logs[0];        var setLogs=_logs[1];
+  var _ss    = useState('idle');       var sheetStatus=_ss[0];   var setSheetStatus=_ss[1];
+
+  var acRef = useRef(activeConv);
+  useEffect(function(){ acRef.current = activeConv; },[activeConv]);
+
+  function addLog(ev,tp){
+    setLogs(function(p){ return [{time:timeNow(),event:ev,type:tp}].concat(p); });
+  }
+
+  /* ── Fetch leads from Sheet on mount ──────────────────────────────────── */
+  // ── Extract fetch into a named function so it can be called on demand ──
+  function fetchSheetLeads(url) {
+    if(!url || url==='YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') return;
+    setSheetStatus('loading');
+    addLog('Fetching leads from Google Sheet…','ai');
+    // Add cache-buster so browser doesn't return stale response
+    var fetchUrl = url + (url.indexOf('?')===-1?'?':'&') + '_t=' + Date.now();
+    fetch(fetchUrl, { redirect: 'follow' })
+      .then(function(r){
+        if(!r.ok) throw new Error('HTTP '+r.status);
+        return r.text();
+      })
+      .then(function(raw){
+        var data;
+        try { data = JSON.parse(raw); }
+        catch(pe){ throw new Error('Invalid JSON from Sheet'); }
+        var rows = data.leads||data.data||data||[];
+        if(!Array.isArray(rows)||rows.length===0) throw new Error('No rows returned');
+        var mapped = rows.map(function(row,i){
+          var name    = row.Name    ||row.name    ||('Lead '+(i+1));
+          var phone   = String(row.Phone||row.phone||row.Mobile||'0000000000');
+          var lastMsg = row.LastMsg ||row.Message ||row.message||'New enquiry';
+          // Clean up timestamp — Apps Script returns full date string for time cells
+          var rawTime = String(row.Time||'');
+          var cleanTime = rawTime;
+          var tmMatch = rawTime.match(/(\d{1,2}:\d{2}:\d{2})/);
+          if(tmMatch){
+            var parts = tmMatch[1].split(':');
+            var hh = parseInt(parts[0]); var mm = parts[1];
+            cleanTime = (hh%12||12)+':'+mm+' '+(hh<12?'AM':'PM');
+          }
+          return {
+            id:Date.now()+i, user:name, phone:phone,
+            avatar:initials(name), color:colorFor(i),
+            lastMsg:lastMsg, time:cleanTime||'Just now',
+            unread:1,
+            interest:row.Interest||row.interest||'',
+            status:row.Status||row.status||'New',
+            messages:[{from:'lead',text:lastMsg,time:cleanTime||timeNow()}],
+          };
+        });
+        setConvs(mapped);
+        setActive(mapped[0]);
+        acRef.current = mapped[0];
+        setStats(function(s){ return Object.assign({},s,{
+          leads:mapped.length,
+          pending:mapped.filter(function(c){return c.unread>0;}).length
+        });});
+        setSheetStatus('ok');
+        addLog('Loaded '+mapped.length+' leads from Google Sheet','lead');
+      })
+      .catch(function(e){
+        console.warn('Sheet fetch failed:',e.message);
+        setSheetStatus('error');
+        addLog('Sheet fetch failed: '+e.message+' — using demo data','ai');
+      });
+  }
+
+  // On mount: try URL if already hardcoded
+  useEffect(function(){
+    var url = window.SHEET_URL || '';
+    if(url && url!=='YOUR_GOOGLE_APPS_SCRIPT_URL_HERE') {
+      fetchSheetLeads(url);
+    }
+    // Listen for the modal connect event (fires when user pastes URL and clicks Connect)
+    function onSheetReady(ev) {
+      var url = ev.detail && ev.detail.url ? ev.detail.url : window.SHEET_URL;
+      if(url) fetchSheetLeads(url);
+    }
+    window.addEventListener('sheetUrlSet', onSheetReady);
+    return function(){ window.removeEventListener('sheetUrlSet', onSheetReady); };
+  // eslint-disable-next-line
+  },[]);
+
+  /* ── Simulate incoming lead ───────────────────────────────────────────── */
+  function simulateDM(text){
+    var cur = acRef.current; if(!cur) return;
+    var nm = {from:'lead',text:text,time:timeNow()};
+    setConvs(function(p){ return p.map(function(c){
+      return c.id===cur.id
+        ? Object.assign({},c,{messages:c.messages.concat([nm]),lastMsg:text,unread:c.unread+1})
+        : c;
+    });});
+    setActive(function(p){ return Object.assign({},p,{messages:p.messages.concat([nm]),lastMsg:text}); });
+    addLog('New enquiry from '+cur.user,'incoming');
+    if(autoMode){
+      setTyping(true);
+      // Use smartReply with lead's interest for accurate context-aware reply
+      var interest = cur.interest || '';
+      var reply = smartReply(text, interest);
+      if(!reply) reply = 'Thank you for your enquiry! We have properties from Rs 42 Lakh to Rs 3.2 Cr in Kolkata. What is your budget and preferred area?';
+      var delay = 700 + Math.random() * 600;
+      setTimeout(function(){
+        var am = {from:'agent',text:reply,time:timeNow()};
+        setConvs(function(p){ return p.map(function(c){
+          return c.id===cur.id
+            ? Object.assign({},c,{messages:c.messages.concat([nm,am]),lastMsg:reply.slice(0,48)+'…'})
+            : c;
+        });});
+        setActive(function(p){ return Object.assign({},p,{messages:p.messages.concat([nm,am])}); });
+        setTyping(false);
+        setStats(function(s){ return Object.assign({},s,{replied:s.replied+1}); });
+        addLog('AI auto-replied to '+cur.user,'ai');
+      }, delay);
+    }
+  }
+
+  /* ── AI Draft: generate context-aware reply into input box for agent review ── */
+  function draftAIReply(){
+    var cur = acRef.current;
+    if(!cur || isTyping) return;
+
+    // Find the last message the LEAD sent (not agent)
+    var msgs = cur.messages || [];
+    var lastLeadMsg = '';
+    for(var i = msgs.length-1; i >= 0; i--){
+      if(msgs[i].from === 'lead'){ lastLeadMsg = msgs[i].text; break; }
+    }
+    // Fallback: use lead's stored lastMsg or interest
+    if(!lastLeadMsg) lastLeadMsg = cur.lastMsg || '';
+
+    // Use smartReply with BOTH the message AND the lead's interest for full context
+    var interest = cur.interest || '';
+    var reply = smartReply(lastLeadMsg, interest);
+
+    // Absolute fallback — never show empty or wrong reply
+    if(!reply || reply.length < 10){
+      var firstName = (cur.user||'there').split(' ')[0];
+      reply = 'Thank you for reaching out, ' + firstName + '! We have excellent properties in Kolkata starting from Rs 42 Lakh. Could you share your budget and preferred area so I can suggest the best match for you?';
+    }
+
+    setTyping(true);
+    setInput('');
+    setTimeout(function(){
+      setTyping(false);
+      setInput(reply);
+      addLog('AI drafted reply for ' + cur.user + ' — review and click Send & Save', 'ai');
+    }, 650);
+  }
+
+  /* ── Agent send → local update + WhatsApp deep link + Sheet write-back ── */
+  function sendManual(){
+    var text = inputMsg.trim();
+    var cur  = acRef.current;
+    if(!text||!cur) return;
+
+    var am = {from:'agent',text:text,time:timeNow()};
+
+    // 1. Update local UI
+    setConvs(function(p){ return p.map(function(c){
+      return c.id===cur.id
+        ? Object.assign({},c,{
+            messages:c.messages.concat([am]),
+            lastMsg:text.slice(0,48)+'…',
+            unread:0,
+            status:'Contacted',           // mark lead as contacted in UI
+          })
+        : c;
+    });});
+    setActive(function(p){ return Object.assign({},p,{
+      messages:p.messages.concat([am]),
+      lastMsg:text.slice(0,48)+'…',
+      unread:0,
+      status:'Contacted',
+    }); });
+
+    // 2. Log
+    addLog('Agent replied + Sheet updated: '+cur.user+' ('+cur.phone+')','whatsapp');
+    addLog('Sheet write-back: LastReply saved for '+cur.user,'sheet');
+    setStats(function(s){ return Object.assign({},s,{replied:s.replied+1}); });
+
+    // 3. Write reply back to Google Sheet (bidirectional sync)
+    window.writeReplyToSheet(cur.phone, cur.user, text);
+
+    // 4. Open WhatsApp deep link
+    var phone   = cleanPhoneGlobal(cur.phone||'');
+    var encoded = encodeURIComponent(text);
+    window.open('https://wa.me/'+phone+'?text='+encoded,'_blank','noopener,noreferrer');
+    window.showToast('📲 WhatsApp opened for '+cur.user+' (+'+phone+')');
+
+    // 5. Clear input
+    setInput('');
+  }
+
+  function selectConv(conv){
+    setActive(conv); acRef.current = conv;
+    setConvs(function(p){ return p.map(function(c){
+      return c.id===conv.id ? Object.assign({},c,{unread:0}) : c;
+    });});
+  }
+
+  var TABS=[
+    {key:'inbox',label:'💬 Leads Inbox'},
+    {key:'props',label:'🏠 Properties'},
+    {key:'logs', label:'📋 Activity Log'},
+  ];
+
+  return (
+    <div style={{height:'100vh',display:'flex',flexDirection:'column',
+      background:WA.bg,color:'#e8e8f0'}}>
+
+      <Header autoMode={autoMode}
+        onToggleAuto={function(){setAuto(function(v){return !v;});}}
+        sheetStatus={sheetStatus}/>
+
+      {/* Tab bar */}
+      <div style={{display:'flex',padding:'0 22px',
+        borderBottom:'1px solid '+WA.border,
+        background:'#0e0e18',flexShrink:0,alignItems:'center'}}>
+        {TABS.map(function(t){
+          var ac = activeTab===t.key;
+          return (
+            <div key={t.key} onClick={function(){setTab(t.key);}}
+              style={{padding:'12px 15px',fontSize:13,fontWeight:600,
+                cursor:'pointer',userSelect:'none',
+                color:ac?WA.green:'#555',
+                borderBottom:'2px solid '+(ac?WA.green:'transparent'),
+                transition:'color 0.2s'}}>{t.label}</div>
+          );
+        })}
+        <div style={{marginLeft:'auto',fontSize:11,color:'#333',padding:'0 8px'}}>
+          {sheetStatus==='ok'      && <span style={{color:WA.green}}>✅ Sheet live · bidirectional</span>}
+          {sheetStatus==='error'   && <span style={{color:'#ef4444'}}>⚠️ Demo mode</span>}
+          {sheetStatus==='loading' && <span style={{color:'#f59e0b'}}>🔄 Syncing…</span>}
+          {sheetStatus==='idle'    && <span>📋 Demo data</span>}
+        </div>
+      </div>
+
+      {/* Body */}
+      <div style={{flex:1,display:'flex',overflow:'hidden'}}>
+        {activeTab==='inbox' && (
+          <React.Fragment>
+            <Sidebar conversations={convs} activeId={activeConv&&activeConv.id}
+              onSelect={selectConv} onSimulate={simulateDM}/>
+            <ChatWindow conv={activeConv} messages={activeConv&&activeConv.messages}
+              isTyping={isTyping} inputMsg={inputMsg}
+              onInputChange={setInput} onSend={sendManual} onDraftAI={draftAIReply}/>
+            <StatsPanel stats={stats} autoMode={autoMode}
+              onToggleAuto={function(){setAuto(function(v){return !v;});}}
+              onSimulate={simulateDM} sheetStatus={sheetStatus}/>
+          </React.Fragment>
+        )}
+        {activeTab==='props' && <PropertiesDashboard conversations={convs}/>}
+        {activeTab==='logs'  && <ActivityLog logs={logs}/>}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App,null));
+</script>
+</body>
+</html>
